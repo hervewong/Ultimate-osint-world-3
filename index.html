@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f6feb">
+<title>Poste OSINT (complet)</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#1c2128;--bd:#c8ccd4;--ac:#1f6feb;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1e2227;--card:#2d333b;--tx:#e6e6e6;--bd:#444c56;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1e2227;--card:#2d333b;--tx:#e6e6e6;--bd:#444c56;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px system-ui,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:8px;z-index:9;border-bottom:1px solid var(--bd)}
+.row{display:flex;gap:6px;margin:6px 0}
+input,select,button,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:9px}
+input,select,textarea{flex:1;min-width:0;width:100%;margin:3px 0}
+button{cursor:pointer}
+nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+nav button{white-space:nowrap}
+nav button.on,#go{background:var(--ac);border-color:var(--ac);color:#fff}
+main{padding:8px}
+details,.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;margin:8px 0;padding:4px 10px}
+.card.ac{border-color:var(--ac)}
+summary{font-weight:600;padding:10px 0}
+.r{display:flex;align-items:center;border-top:1px solid var(--bd)}
+.r a{flex:1;padding:11px 6px;color:var(--tx);text-decoration:none}
+.r small{display:block;opacity:.65;font-size:12px}
+.s{border:0;background:none;font-size:22px;padding:6px 10px}
+.sec{font-weight:600;margin:14px 4px 2px}
+.hint{opacity:.75;padding:8px 2px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div class="row"><input id="q" placeholder="Rechercher ou cible : mot-clé, domaine, IP, e-mail, pseudo…" autocapitalize="off" autocorrect="off" spellcheck="false"><button id="gs" title="Rechercher">🔍</button><button id="go">⚡ Auto</button><button id="th" title="Clair / sombre">◐</button></div>
+  <nav><button data-t="all">Recherche</button><button data-t="osint">OSINT</button><button data-t="engines">Moteurs</button><button data-t="monde">Monde</button><button data-t="dorks">Dorks</button><button data-t="dossiers">Dossiers</button><button data-t="favs">Favoris</button></nav>
+</header>
+<main><div id="auto"></div><div id="out"></div><div class="hint" id="st"></div><div class="hint">Sans cible, un outil ouvre la page d’accueil du site. Sources publiques uniquement, dans le respect de la loi.</div></main>
+<script>
+const DATA={"osint":[{"g":"Domaine / IP","t":[{"n":"Whois","u":"https://who.is/whois/{q}"},{"n":"Enregistrements DNS","u":"https://viewdns.info/dnsrecord/?domain={q}"},{"n":"Certificats (crt.sh)","u":"https://crt.sh/?q={q}"},{"n":"Historique Wayback Machine","u":"https://web.archive.org/web/*/{q}","raw":1},{"n":"Archive.today","u":"https://archive.ph/{q}","raw":1},{"n":"urlscan.io","u":"https://urlscan.io/search/#{q}"},{"n":"VirusTotal","u":"https://www.virustotal.com/gui/search/{q}"},{"n":"Shodan","u":"https://www.shodan.io/search?query={q}"},{"n":"BuiltWith (technologies)","u":"https://builtwith.com/{q}"},{"n":"IPinfo","u":"https://ipinfo.io/{q}"},{"n":"AbuseIPDB","u":"https://www.abuseipdb.com/check/{q}"},{"n":"Robtex","u":"https://www.robtex.com/dns-lookup/{q}"},{"n":"Autres sites sur la même IP","u":"https://viewdns.info/reverseip/?host={q}&t=1"},{"n":"Historique des IP du domaine","u":"https://viewdns.info/iphistory/?domain={q}"},{"n":"BGP / réseau (Hurricane Electric)","u":"https://bgp.he.net/search?search%5Bsearch%5D={q}&commit=Search"},{"n":"Réputation (Cisco Talos)","u":"https://talosintelligence.com/reputation_center/lookup?search={q}"},{"n":"GreyNoise (IP)","u":"https://viz.greynoise.io/ip/{q}"},{"n":"Test SSL (SSL Labs)","u":"https://www.ssllabs.com/ssltest/analyze.html?d={q}"},{"n":"En-têtes de sécurité","u":"https://securityheaders.com/?q={q}"},{"n":"Google Safe Browsing","u":"https://transparencyreport.google.com/safe-browsing/search?url={q}"},{"n":"Archiver la page maintenant (Wayback)","u":"https://web.archive.org/save/{q}","raw":1}]},{"g":"E-mail / pseudo","t":[{"n":"Epieos (e-mail)","u":"https://epieos.com/?q={q}"},{"n":"Have I Been Pwned (fuites)","u":"https://haveibeenpwned.com/"},{"n":"WhatsMyName (pseudo)","u":"https://whatsmyname.app/?q={q}"},{"n":"Recherche exacte \"{q}\"","u":"https://www.google.com/search?q=%22{q}%22"},{"n":"GitHub","u":"https://github.com/{q}"},{"n":"Reddit","u":"https://www.reddit.com/user/{q}"},{"n":"X (Twitter)","u":"https://x.com/{q}"},{"n":"Instagram","u":"https://www.instagram.com/{q}/"},{"n":"Intelligence X","u":"https://intelx.io/?s={q}"},{"n":"Twitch","u":"https://www.twitch.tv/{q}"},{"n":"TikTok","u":"https://www.tiktok.com/@{q}"},{"n":"Steam","u":"https://steamcommunity.com/id/{q}"},{"n":"Telegram (via Google)","u":"https://www.google.com/search?q=site%3At.me+%22{q}%22"}]},{"g":"Entreprises","t":[{"n":"Pappers (France)","u":"https://www.pappers.fr/recherche?q={q}"},{"n":"Societe.com (France)","u":"https://www.societe.com/cgi-bin/search?champs={q}"},{"n":"OpenCorporates (monde)","u":"https://opencorporates.com/companies?q={q}"},{"n":"LinkedIn (via Google)","u":"https://www.google.com/search?q=site%3Alinkedin.com+%22{q}%22"},{"n":"ICIJ Offshore Leaks","u":"https://offshoreleaks.icij.org/search?q={q}"},{"n":"OpenSanctions (sanctions)","u":"https://www.opensanctions.org/search/?q={q}"},{"n":"SEC EDGAR (États-Unis)","u":"https://www.sec.gov/edgar/search/#/q={q}"},{"n":"Google Patents (brevets)","u":"https://patents.google.com/?q={q}"},{"n":"Données publiques France","u":"https://www.data.gouv.fr/fr/search/?q={q}"}]},{"g":"Images (coller un lien d'image)","t":[{"n":"Google Lens","u":"https://lens.google.com/uploadbyurl?url={q}"},{"n":"TinEye","u":"https://tineye.com/search?url={q}"},{"n":"Yandex (recherche inversée)","u":"https://yandex.com/images/search?rpt=imageview&url={q}"},{"n":"Bing Visual Search","u":"https://www.bing.com/images/search?view=detailv2&iss=sbi&q=imgurl:{q}"}]},{"g":"Géolocalisation","t":[{"n":"OpenStreetMap","u":"https://www.openstreetmap.org/search?query={q}"},{"n":"Google Earth","u":"https://earth.google.com/web/search/{q}"},{"n":"Sentinel Hub (satellite)","u":"https://apps.sentinel-hub.com/eo-browser/"},{"n":"FlightAware (n° de vol)","u":"https://www.flightaware.com/live/flight/{q}"}]},{"g":"Recherches avancées (dorks)","t":[{"n":"Documents PDF/Office du site","u":"https://www.google.com/search?q=site%3A{q}+(filetype%3Apdf+OR+filetype%3Adocx+OR+filetype%3Axlsx)"},{"n":"Mentions sur Pastebin","u":"https://www.google.com/search?q=site%3Apastebin.com+%22{q}%22"},{"n":"Sous-domaines indexés","u":"https://www.google.com/search?q=site%3A*.{q}+-www.{q}"},{"n":"Répertoires ouverts du site","u":"https://www.google.com/search?q=site%3A{q}+intitle%3A%22index+of%22"}]},{"g":"Transport (avions, bateaux)","t":[{"n":"Flightradar24 (n° de vol)","u":"https://www.flightradar24.com/data/flights/{q}"},{"n":"ADS-B Exchange (avions en direct)","u":"https://globe.adsbexchange.com/"},{"n":"MarineTraffic (nom du bateau)","u":"https://www.marinetraffic.com/en/ais/index/search/all?keyword={q}"},{"n":"VesselFinder (nom du bateau)","u":"https://www.vesselfinder.com/vessels?name={q}"},{"n":"Avion par immatriculation","u":"https://www.flightradar24.com/data/aircraft/{q}"},{"n":"Photos d'avion (JetPhotos)","u":"https://www.jetphotos.com/registration/{q}"}]},{"g":"Vérification des faits et médias","t":[{"n":"Google Fact Check Explorer","u":"https://toolbox.google.com/factcheck/explorer/search/{q}"},{"n":"Wikimedia Commons (images)","u":"https://commons.wikimedia.org/w/index.php?search={q}"},{"n":"Vidéos YouTube","u":"https://www.youtube.com/results?search_query={q}"}]},{"g":"Chine (entreprises, réseaux, domaines)","t":[{"n":"Tianyancha (entreprise)","u":"https://www.tianyancha.com/search?key={q}"},{"n":"Qichacha (entreprise)","u":"https://www.qcc.com/web/search?key={q}"},{"n":"Aiqicha (entreprise)","u":"https://aiqicha.baidu.com/s?q={q}"},{"n":"Whois chinois (Chinaz)","u":"https://whois.chinaz.com/{q}"},{"n":"IP / domaine (Chinaz)","u":"https://ip.chinaz.com/{q}"},{"n":"Pages du site indexées par Baidu","u":"https://www.baidu.com/s?wd=site%3A{q}"},{"n":"Weibo","u":"https://s.weibo.com/weibo?q={q}"},{"n":"Articles WeChat","u":"https://weixin.sogou.com/weixin?type=2&query={q}"},{"n":"Bilibili (comptes)","u":"https://search.bilibili.com/upuser?keyword={q}"},{"n":"Zhihu","u":"https://www.zhihu.com/search?q={q}"},{"n":"Baidu Maps","u":"https://map.baidu.com/search/{q}"},{"n":"Gaode Maps","u":"https://www.amap.com/search?query={q}"},{"n":"Enregistrement ICP du domaine (Chinaz)","u":"https://icp.chinaz.com/{q}"},{"n":"Classement et SEO du site (Chinaz)","u":"https://seo.chinaz.com/{q}"},{"n":"Aizhan (statistiques du site)","u":"https://www.aizhan.com/cha/{q}/"},{"n":"ipchaxun (IP et domaines liés)","u":"https://ipchaxun.com/{q}/"},{"n":"Qixin (entreprise)","u":"https://www.qixin.com/search?key={q}"},{"n":"Registre officiel des entreprises (GSXT)","u":"https://www.gsxt.gov.cn/index.html"},{"n":"Recherche ICP officielle (MIIT)","u":"https://beian.miit.gov.cn/"}]},{"g":"Traduction","t":[{"n":"Traduire un texte en français","u":"https://translate.google.com/?sl=auto&tl=fr&text={q}&op=translate"},{"n":"Traduire une page web (coller le lien)","u":"https://translate.google.com/translate?sl=auto&tl=fr&u={q}"},{"n":"Traduire avec Bing","u":"https://www.bing.com/translator?from=&to=fr&text={q}"},{"n":"Traduire avec Yandex","u":"https://translate.yandex.com/?source_lang=auto&target_lang=fr&text={q}"}]},{"g":"Réseaux sociaux (recherche)","t":[{"n":"Facebook","u":"https://www.facebook.com/search/top?q={q}"},{"n":"Bluesky","u":"https://bsky.app/search?q={q}"},{"n":"VK (Russie)","u":"https://vk.com/search?c%5Bq%5D={q}"},{"n":"Pinterest","u":"https://www.pinterest.com/search/pins/?q={q}"},{"n":"Tumblr","u":"https://www.tumblr.com/search/{q}"},{"n":"Flickr","u":"https://www.flickr.com/search/?text={q}"}]},{"g":"Documents et fuites publiques","t":[{"n":"OCCRP Aleph","u":"https://aleph.occrp.org/search?q={q}"},{"n":"DocumentCloud","u":"https://www.documentcloud.org/app?q={q}"},{"n":"MuckRock (demandes FOIA)","u":"https://www.muckrock.com/search/?q={q}"},{"n":"WikiLeaks","u":"https://search.wikileaks.org/?q={q}"},{"n":"Texte intégral Internet Archive","u":"https://archive.org/search?query={q}&sin=TXT"}]},{"g":"Cybermenaces (défensif)","t":[{"n":"Failles CVE (NVD)","u":"https://nvd.nist.gov/vuln/search/results?query={q}"},{"n":"AlienVault OTX","u":"https://otx.alienvault.com/browse/global/pulses?q={q}"},{"n":"URLhaus (liens malveillants)","u":"https://urlhaus.abuse.ch/browse.php?search={q}"},{"n":"ThreatFox (indicateurs)","u":"https://threatfox.abuse.ch/browse.php?search=ioc%3A{q}"}]},{"g":"Vidéo : comptes et chaînes","t":[{"n":"YouTube (chaîne @)","u":"https://www.youtube.com/@{q}"},{"n":"Vimeo (compte)","u":"https://vimeo.com/{q}"},{"n":"Dailymotion (compte)","u":"https://www.dailymotion.com/{q}"},{"n":"Rumble (compte)","u":"https://rumble.com/user/{q}"},{"n":"Odysee (chaîne)","u":"https://odysee.com/@{q}"},{"n":"Kuaishou (recherche)","u":"https://www.kuaishou.com/search/video?searchKey={q}"},{"n":"Youku (recherche)","u":"https://so.youku.com/search_video/q_{q}"},{"n":"Tencent Video (recherche)","u":"https://v.qq.com/x/search/?q={q}"}]},{"g":"Vidéo : vérification et analyse","t":[{"n":"YouTube DataViewer (Amnesty)","u":"https://citizenevidence.amnestyusa.org/"},{"n":"Plugin InVID-WeVerify","u":"https://www.invid-project.eu/tools-and-services/invid-verification-plugin/"},{"n":"Regarder image par image","u":"https://www.watchframebyframe.com/"},{"n":"Recherche d'image inversée (Google Lens)","u":"https://lens.google.com/uploadbyurl?url={q}"}]},{"g":"Web décentralisé, Tor et navigateurs alternatifs","t":[{"n":"Contenu IPFS (coller le CID)","u":"https://ipfs.io/ipfs/{q}","raw":1},{"n":"Nom de domaine ENS (.eth)","u":"https://app.ens.domains/{q}"},{"n":"SearXNG : annuaire des instances publiques","u":"https://searx.space/"},{"n":"MetaGer (métamoteur)","u":"https://metager.org/"},{"n":"YaCy : site officiel (installer son moteur)","u":"https://yacy.net/"},{"n":"Tor Browser (téléchargement)","u":"https://www.torproject.org/download/"},{"n":"Brave (téléchargement)","u":"https://brave.com/download/"},{"n":"Mullvad Browser (téléchargement)","u":"https://mullvad.net/en/browser"},{"n":"LibreWolf (téléchargement)","u":"https://librewolf.net/"},{"n":"Waterfox (téléchargement)","u":"https://www.waterfox.net/"}]},{"g":"Navigateurs chinois (téléchargement)","t":[{"n":"QQ Browser","u":"https://browser.qq.com/"},{"n":"360 Secure Browser","u":"https://browser.360.cn/"},{"n":"UC Browser","u":"https://www.uc.cn/"},{"n":"Quark Browser","u":"https://www.quark.cn/"},{"n":"Sogou Browser","u":"https://ie.sogou.com/"},{"n":"2345 Browser","u":"https://browser.2345.com/"},{"n":"Liebao (Cheetah)","u":"https://www.liebao.cn/"},{"n":"Maxthon","u":"https://www.maxthon.com/"}]},{"g":"Ressources et annuaires","t":[{"n":"OSINT Framework","u":"https://osintframework.com/"},{"n":"Bellingcat Toolkit","u":"https://bellingcat.gitbook.io/toolkit"},{"n":"Awesome OSINT (GitHub)","u":"https://github.com/jivoi/awesome-osint"},{"n":"Public APIs (GitHub)","u":"https://github.com/public-apis/public-apis"},{"n":"IntelTechniques (outils)","u":"https://inteltechniques.com/tools/"},{"n":"Google Hacking Database","u":"https://www.exploit-db.com/google-hacking-database"},{"n":"OSINT.link","u":"https://osint.link/"},{"n":"OSINT Dojo","u":"https://www.osintdojo.com/resources/"}]}],"engines":[{"g":"Généralistes","t":[{"n":"Google","u":"https://www.google.com/search?q={q}"},{"n":"Bing","u":"https://www.bing.com/search?q={q}"},{"n":"DuckDuckGo","u":"https://duckduckgo.com/?q={q}"},{"n":"Brave","u":"https://search.brave.com/search?q={q}"},{"n":"Yandex","u":"https://yandex.com/search/?text={q}"},{"n":"Yahoo","u":"https://search.yahoo.com/search?p={q}"},{"n":"Startpage","u":"https://www.startpage.com/do/search?q={q}"},{"n":"Qwant","u":"https://www.qwant.com/?q={q}"},{"n":"Ecosia","u":"https://www.ecosia.org/search?q={q}"},{"n":"Mojeek","u":"https://www.mojeek.com/search?q={q}"},{"n":"Swisscows","u":"https://swisscows.com/web?query={q}"},{"n":"Marginalia","u":"https://search.marginalia.nu/search?query={q}"}]},{"g":"Régionaux","t":[{"n":"Baidu (Chine)","u":"https://www.baidu.com/s?wd={q}"},{"n":"Naver (Corée)","u":"https://search.naver.com/search.naver?query={q}"},{"n":"Seznam (Tchéquie)","u":"https://search.seznam.cz/?q={q}"},{"n":"Daum (Corée)","u":"https://search.daum.net/search?q={q}"},{"n":"Yahoo Japon","u":"https://search.yahoo.co.jp/search?p={q}"},{"n":"Yandex Cartes","u":"https://yandex.com/maps/?text={q}"},{"n":"Bing Cartes","u":"https://www.bing.com/maps?q={q}"}]},{"g":"Images et vidéos","t":[{"n":"Google Images","u":"https://www.google.com/search?tbm=isch&q={q}"},{"n":"Bing Images","u":"https://www.bing.com/images/search?q={q}"},{"n":"Yandex Images","u":"https://yandex.com/images/search?text={q}"},{"n":"YouTube","u":"https://www.youtube.com/results?search_query={q}"}]},{"g":"Actualités et réseaux","t":[{"n":"Google Actualités","u":"https://news.google.com/search?q={q}"},{"n":"Reddit","u":"https://www.reddit.com/search/?q={q}"},{"n":"X (Twitter)","u":"https://x.com/search?q={q}"},{"n":"GitHub","u":"https://github.com/search?q={q}"}]},{"g":"Savoir","t":[{"n":"Wikipédia FR","u":"https://fr.wikipedia.org/w/index.php?search={q}"},{"n":"Google Scholar","u":"https://scholar.google.com/scholar?q={q}"},{"n":"Wolfram Alpha","u":"https://www.wolframalpha.com/input?i={q}"},{"n":"Internet Archive","u":"https://archive.org/search?query={q}"},{"n":"Google Maps","u":"https://www.google.com/maps/search/{q}"}]},{"g":"Technique","t":[{"n":"Shodan","u":"https://www.shodan.io/search?query={q}"},{"n":"Censys","u":"https://search.censys.io/search?resource=hosts&q={q}"}]},{"g":"Chine","t":[{"n":"Sogou","u":"https://www.sogou.com/web?query={q}"},{"n":"360 Search (so.com)","u":"https://www.so.com/s?q={q}"},{"n":"Bing Chine","u":"https://cn.bing.com/search?q={q}"},{"n":"Toutiao","u":"https://so.toutiao.com/search?keyword={q}"},{"n":"Quark","u":"https://quark.sm.cn/s?q={q}"},{"n":"Baidu Images","u":"https://image.baidu.com/search/index?tn=baiduimage&word={q}"},{"n":"Baidu Baike (encyclopédie)","u":"https://baike.baidu.com/search?word={q}"},{"n":"Baidu Tieba (forums)","u":"https://tieba.baidu.com/f/search/res?qw={q}"},{"n":"Baidu Zhidao (questions)","u":"https://zhidao.baidu.com/search?word={q}"},{"n":"Baidu Scholar","u":"https://xueshu.baidu.com/s?wd={q}"},{"n":"Sogou WeChat (articles)","u":"https://weixin.sogou.com/weixin?type=2&query={q}"},{"n":"Weibo","u":"https://s.weibo.com/weibo?q={q}"},{"n":"Zhihu","u":"https://www.zhihu.com/search?q={q}"},{"n":"Bilibili","u":"https://search.bilibili.com/all?keyword={q}"},{"n":"Douban","u":"https://www.douban.com/search?q={q}"},{"n":"Xiaohongshu","u":"https://www.xiaohongshu.com/search_result?keyword={q}"},{"n":"Douyin","u":"https://www.douyin.com/search/{q}"},{"n":"Tianyancha (entreprises)","u":"https://www.tianyancha.com/search?key={q}"},{"n":"Qichacha (entreprises)","u":"https://www.qcc.com/web/search?key={q}"},{"n":"Aiqicha (entreprises)","u":"https://aiqicha.baidu.com/s?q={q}"},{"n":"Baidu Maps","u":"https://map.baidu.com/search/{q}"},{"n":"Gaode Maps (Amap)","u":"https://www.amap.com/search?query={q}"},{"n":"Sogou Images","u":"https://pic.sogou.com/pics?query={q}"},{"n":"360 Images","u":"https://image.so.com/i?q={q}"},{"n":"Bing Chine Images","u":"https://cn.bing.com/images/search?q={q}"},{"n":"Sogou Vidéos","u":"https://v.sogou.com/v?query={q}"},{"n":"Shenma (UC)","u":"https://m.sm.cn/s?q={q}"},{"n":"Baidu Actualités","u":"https://www.baidu.com/s?rtt=1&bsst=1&cl=2&tn=news&word={q}"},{"n":"Baidu Wenku (documents)","u":"https://wenku.baidu.com/search?word={q}"}]},{"g":"Vidéos Chine","t":[{"n":"Kuaishou","u":"https://www.kuaishou.com/search/video?searchKey={q}"},{"n":"Tencent Video","u":"https://v.qq.com/x/search/?q={q}"},{"n":"iQIYI","u":"https://so.iqiyi.com/so/q_{q}"},{"n":"Youku","u":"https://so.youku.com/search_video/q_{q}"},{"n":"Mango TV","u":"https://so.mgtv.com/so?k={q}"},{"n":"Xigua","u":"https://www.ixigua.com/search/{q}"},{"n":"Haokan (Baidu)","u":"https://haokan.baidu.com/web/search/page?query={q}"},{"n":"Weibo Vidéos","u":"https://s.weibo.com/video?q={q}"},{"n":"AcFun","u":"https://www.acfun.cn/search?keyword={q}"},{"n":"Douyu (direct)","u":"https://www.douyu.com/search/?kw={q}"},{"n":"Huya (direct)","u":"https://www.huya.com/search?hsk={q}"}]},{"g":"Vidéos monde","t":[{"n":"TikTok","u":"https://www.tiktok.com/search?q={q}"},{"n":"Vimeo","u":"https://vimeo.com/search?q={q}"},{"n":"Dailymotion","u":"https://www.dailymotion.com/search/{q}"},{"n":"Twitch","u":"https://www.twitch.tv/search?term={q}"},{"n":"Kick (direct)","u":"https://kick.com/search?searchable={q}"},{"n":"Rumble","u":"https://rumble.com/search/video?q={q}"},{"n":"Odysee","u":"https://odysee.com/$/search?q={q}"},{"n":"BitChute","u":"https://www.bitchute.com/search/?query={q}&kind=video"},{"n":"Facebook Watch","u":"https://www.facebook.com/watch/search/?q={q}"},{"n":"VK Vidéo (Russie)","u":"https://vk.com/video?q={q}"},{"n":"Rutube (Russie)","u":"https://rutube.ru/search/?query={q}"},{"n":"Niconico (Japon)","u":"https://www.nicovideo.jp/search/{q}"},{"n":"Google Vidéos","u":"https://www.google.com/search?tbm=vid&q={q}"},{"n":"Bing Vidéos","u":"https://www.bing.com/videos/search?q={q}"},{"n":"Yandex Vidéos","u":"https://yandex.com/video/search?text={q}"},{"n":"Brave Vidéos","u":"https://search.brave.com/videos?q={q}"}]}]};
+
+const $=s=>document.querySelector(s), q=()=>$("#q").value.trim();
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x)e.textContent=x;return e};
+const msg=t=>{$("#st").textContent=t};
+const isU=u=>/^https?:\/\//i.test(u||"");
+
+function clean(d){
+  d=d&&typeof d==="object"?d:{};
+  const s=(v,n)=>String(v==null?"":v).slice(0,n);
+  const favs=(Array.isArray(d.favs)?d.favs:[]).map(x=>{
+    if(!x||typeof x.id!=="string")return null;
+    if(x.t==="link"&&isU(x.u))return{t:"link",id:s(x.id,600),n:s(x.n,120),u:s(x.u,500)};
+    return null;
+  }).filter(Boolean).slice(0,2000);
+  return {favs};
+}
+let D=clean({});
+try{const v=JSON.parse(localStorage.getItem("osint_favs"));if(v)D=clean(v)}catch(e){}
+function save(){try{localStorage.setItem("osint_favs",JSON.stringify(D));msg("Favoris enregistrés ✓")}catch(e){}}
+const has=id=>D.favs.some(x=>x.id===id);
+function tog(it){D.favs=has(it.id)?D.favs.filter(x=>x.id!==it.id):[...D.favs,it];save()}
+
+function row(n,sub,href,it){
+  const r=el("div","r"),a=el("a");
+  a.href=href; a.target="_blank"; a.rel="noopener noreferrer";
+  a.append(el("b",0,n));
+  if(sub)a.append(el("small",0,sub));
+  r.append(a);
+  if(it){
+    const s=el("button","s",has(it.id)?"★":"☆");
+    s.title="Favori";
+    s.onclick=()=>{tog(it);s.textContent=has(it.id)?"★":"☆";if(tab==="favs")render()};
+    r.append(s);
+  }
+  return r;
+}
+
+let tab="all";
+function formatUrl(u,query){
+  if(!query)return u.includes("{q}")?u.split("{q}").join(""):u;
+  return u.split("{q}").join(encodeURIComponent(query));
+}
+
+function buildSection(gName, items, query){
+  const d=document.createElement("details");
+  d.open=true;
+  d.append(el("summary",0,gName+" ("+items.length+")"));
+  items.forEach(x=>{
+    const targetUrl = formatUrl(x.u, query);
+    const itemObj={t:"link", id:"l:"+x.u, n:x.n, u:targetUrl};
+    d.append(row(x.n, x.u, targetUrl, itemObj));
+  });
+  return d;
+}
+
+function allTab(o){
+  const v=q();
+  o.append(el("div","hint",v?"Résultats pour la cible : "+v:"Entrez une cible en haut (domaine, IP, e-mail, pseudo) pour l’injecter partout instantanément."));
+  DATA.osint.forEach(sec=>{
+    o.append(buildSection("OSINT : "+sec.g, sec.t, v));
+  });
+  DATA.engines.forEach(sec=>{
+    o.append(buildSection("Moteur : "+sec.g, sec.t, v));
+  });
+}
+
+function osintTab(o){
+  const v=q();
+  DATA.osint.forEach(sec=>{
+    o.append(buildSection(sec.g, sec.t, v));
+  });
+}
+
+function enginesTab(o){
+  const v=q();
+  DATA.engines.forEach(sec=>{
+    o.append(buildSection(sec.g, sec.t, v));
+  });
+}
+
+function favsTab(o){
+  o.append(el("div","sec","Mes favoris"));
+  if(!D.favs.length){o.append(el("div","hint","Aucun favori enregistré. Touchez ☆ à côté d’un outil."));return}
+  const c=el("div","card");
+  D.favs.forEach(x=>c.append(row(x.n, x.u, x.u, x)));
+  o.append(c);
+}
+
+function render(){
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===tab));
+  const o=$("#out"); o.textContent="";
+  if(tab==="all")allTab(o);
+  else if(tab==="osint")osintTab(o);
+  else if(tab==="engines")enginesTab(o);
+  else if(tab==="favs")favsTab(o);
+  else {
+    o.append(el("div","hint","Onglet en cours de chargement ou regroupé."));
+  }
+}
+
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;msg("");render()});
+$("#q").addEventListener("input",()=>render());
+$("#gs").onclick=()=>render();
+$("#go").onclick=()=>{
+  const v=q();
+  if(!v){msg("Entrez d’abord une cible !");return}
+  msg("Ouverture rapide des principaux outils…");
+  window.open("https://who.is/whois/"+encodeURIComponent(v), "_blank");
+  window.open("https://www.google.com/search?q="+encodeURIComponent(v), "_blank");
+  window.open("https://www.virustotal.com/gui/search/"+encodeURIComponent(v), "_blank");
+};
+$("#th").onclick=()=>{
+  const r=document.documentElement, d=matchMedia("(prefers-color-scheme: dark)").matches, c=r.dataset.theme||(d?"dark":"light"), n=c==="dark"?"light":"dark";
+  r.dataset.theme=n;
+};
+render();
+</script>
+</body>
+</html>
